@@ -8,9 +8,6 @@ Scan through a taxon metadata file, filtering by particular fields. Only certain
 Print out the genus and species of each archaeon:
 ```sh
 $ img_metadata_scanner.rb Domain=Archaea --output-fields "Genus,Species" |head
-DEBUG img_metadata_scanner: Using environment variable IMG_METADATA_FILE to define path to IMG metadata file /srv/whitlam/bio/db/img/4.0/metadata/img_metadata_4_0_FIXED.csv
- INFO img_metadata_scanner: Using 1 filters.
- INFO img_metadata_scanner: Found 4700 taxons in the IMG metadata file
 Thermococcus	gammatolerans
 Methanolobus	
 Pyrobaculum	
@@ -45,6 +42,29 @@ GenBank Project ID
 Strain
 ...
 ```
+
+The data is comes from a metadata file, which is obtained through the instructions below. You can specify the location of
+this file to the script using the ```--img-metadata-file``` flag, or you can set the ```IMG_METADATA_FILE``` environment
+variable if you are too lazy to type it in each time.
+
+Go to IMG > Genome Browser: http://img.jgi.doe.gov/cgi-bin/w/main.cgi?section=TaxonList&page=taxonListAlpha
+
+In the Table Configuration section:
+* Genome Field     > Click All
+* Project Metadata > Click All
+* Data Statistics  > Click All
+
+Click Display Genomes Again. In the Genome Browser section > Click Select All. Finally, click the Export button.
+
+PS/ Don't trust the IMG metadata _too much_. There are some big mistakes, e.g. in the 16S copy number
+
+PS2/ What have I done to create the FIXED metadata?
+* I have deleted two occurences of "\r" (^M) by ""
+* taxonoid 2515154013 has two extra fields: remove the two cells containing "Human wound, cranian"
+* Replace cells containing "-1" by ""
+* Replaced 'Marine archaeal group 1 BG20 (Nitrosoarchaeum limnia BG20)' by 'Nitrosoarchaeum limnia BG20'
+
+(Download instructions kindly contributed by @fangly / Florent Angly)
 
 ## Copyright
 

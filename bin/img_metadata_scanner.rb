@@ -10,6 +10,7 @@ IMG_METADATA_FILE_ENV_VARIABLE_NAME='IMG_METADATA_FILE'
 # Parse command line options into the options hash
 options = {
   :logger => 'stderr',
+  :log_level => 'info',
   :output_fields => ['taxon_oid'],
   :listing_mode => false,
 }
@@ -45,19 +46,22 @@ Methanobrevibacter	smithii\n\n"
   opts.on("-l", "--list", "Instead of filtering print a list of the fields in the output file, newline separated [default: #{options[:listing_mode]}]") do |arg|
     options[:listing_mode] = true
   end
+  opts.on("--sample FIELD", "Only return 1 row for each entry type of that column, chosen randomly. E.g. one row per genus: '--sample Genus'. Only 1 column can be sampled at a time, currently. Any filtering is done _before_ sampling. Any rows that are empty in the sampling column are filtered out.[default: no sampling]") do |arg|
+    options[:sampling_column] = arg
+  end
   opts.on("-i", "--img-metadata-file PATH", "Path to IMG metadata file [required]. This is not necessary if there is a valid environment variable #{IMG_METADATA_FILE_ENV_VARIABLE_NAME} available.") do |arg|
     options[:img_metadata_file] = arg
   end
   
   # logger options
   opts.separator "\nVerbosity:\n\n"
-  opts.on("-q", "--quiet", "Run quietly, set logging to ERROR level [default INFO]") {Bio::Log::CLI.trace('error')}
+  opts.on("-q", "--quiet", "Run quietly, set logging to ERROR level [default INFO]") {options[:log_level] = 'error'}
   opts.on("--logger filename",String,"Log to file [default #{options[:logger]}]") { |name| options[:logger] = name}
-  opts.on("--trace options",String,"Set log level [default INFO]. e.g. '--trace debug' to set logging level to DEBUG"){|s| Bio::Log::CLI.trace(s)}
+  opts.on("--trace options",String,"Set log level [default INFO]. e.g. '--trace debug' to set logging level to DEBUG"){|s| options[:log_level] = s}
 end; o.parse!
 
 # Setup logging. bio-logger defaults to STDERR not STDOUT, I disagree
-Bio::Log::CLI.logger(options[:logger]); log = Bio::Log::LoggerPlus.new(LOG_NAME); Bio::Log::CLI.configure(LOG_NAME)
+Bio::Log::CLI.logger(options[:logger]); Bio::Log::CLI.trace(options[:log_level]); log = Bio::Log::LoggerPlus.new(LOG_NAME); Bio::Log::CLI.configure(LOG_NAME)
 
 # Read in the system-specific ENV variable for the path to the img metadata file unless a path has already been specified
 if options[:img_metadata_file].nil?
@@ -112,6 +116,11 @@ log.info "Using #{filter_hash.length} filters."
 img = Bio::IMG::TaxonomyDefinitionFile.read(options[:img_metadata_file])
 log.info "Found #{img.length} taxons in the IMG metadata file"
 
+# Check that the sampling column is a real column
+unless options[:sampling_column].nil? or img[0].attributes.key?(options[:sampling_column])
+  log.error "You asked to sample the column '#{options[:sampling_column]}', but this doesn't appear to be a column in the metadata file"
+end
+
 # Expect that each of the filters are found in the list of headers available, otherwise filtering will be ineffectual
 # Ditto for the output names
 [filter_hash.keys, options[:output_fields]].flatten.each do |key|
@@ -121,18 +130,37 @@ log.info "Found #{img.length} taxons in the IMG metadata file"
   end
 end
 
-# Go through each row, printing the outputs if they pass the filter
-img.each do |taxon|
+# Filter the rows
+filtered = img.select do |taxon|
   passed = true
   filter_hash.each do |key, value|
     if taxon.attributes[key] != value
-    passed = false
-    break
+      passed = false
+      break
     end
   end
+  passed
+end
+log.debug "After filtering, there were #{filtered.length} taxons"
 
-  if passed
-    puts options[:output_fields].collect{|field| taxon.attributes[field]}.join("\t")
+# Sample from the rows
+if options[:sampling_column]
+  samples = {}
+  filtered.each do |taxon|
+    type = taxon.attributes[options[:sampling_column]]
+    samples[type] ||= []
+    samples[type].push taxon
   end
+  filtered = samples.values.collect do |group|
+    group.sample
+  end
+  
+  log.debug "After sampling, there were #{filtered.length} taxons"
+end
+
+# Go through each row, printing the outputs
+log.info "Printing out outputs for #{filtered.length} taxons"
+filtered.each do |taxon|
+  puts options[:output_fields].collect{|field| taxon.attributes[field]}.join("\t")
 end
 

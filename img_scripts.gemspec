@@ -5,26 +5,27 @@
 
 Gem::Specification.new do |s|
   s.name = "img_scripts"
-  s.version = "0.0.1"
+  s.version = "0.0.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ben J. Woodcroft"]
-  s.date = "2013-01-11"
+  s.date = "2013-01-15"
   s.description = "Scripts related to the IMG (Integrated Microbial Genomes) database"
   s.email = "donttrustben near gmail.com"
   s.executables = ["img_metadata_scanner.rb"]
   s.extra_rdoc_files = [
     "LICENSE.txt",
-    "README.rdoc"
+    "README.md"
   ]
   s.files = [
     ".document",
     "Gemfile",
     "LICENSE.txt",
-    "README.rdoc",
+    "README.md",
     "Rakefile",
     "VERSION",
     "bin/img_metadata_scanner.rb",
+    "img_scripts.gemspec",
     "lib/img_scripts.rb",
     "test/helper.rb",
     "test/test_img_scripts.rb"
@@ -32,7 +33,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://github.com/wwood/img_scripts"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.17"
+  s.rubygems_version = "1.8.15"
   s.summary = "Scripts related to the IMG (Integrated Microbial Genomes) database"
 
   if s.respond_to? :specification_version then
